@@ -1,4 +1,4 @@
-# image-processing
+# Image processing
 
 Segment or detect objects on images using tensorflow. Models are from tf.hub and tf.lite
 
