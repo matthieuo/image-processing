@@ -1,3 +1,5 @@
+# a large part of this file comes from the tensorflow github
+
 import numpy as np
 import tensorflow as tf
 import PIL.ImageColor as ImageColor

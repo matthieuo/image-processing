@@ -7,7 +7,7 @@ import os
 from utils_img import decode_labels
 
 class Segmentation(BaseModel):
-    def __init__(self, lite_file, output_dir, confidence=0.1):
+    def __init__(self, lite_file, output_dir):
         # Load TFLite model and allocate tensors.
         self._model = tf.lite.Interpreter(model_path=lite_file)
         self._model.allocate_tensors()
@@ -16,8 +16,6 @@ class Segmentation(BaseModel):
         self._input_details = self._model.get_input_details()
         self._output_details = self._model.get_output_details()
 
-        self._confidence = confidence
-        
         print(self._output_details)
         self._output_dir = output_dir / 'segment'
         os.makedirs(self._output_dir, exist_ok=True)
