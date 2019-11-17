@@ -1,14 +1,12 @@
 import tensorflow as tf
 from models.base_model import BaseModel
-from utils_img import decode_labels
+from models.utils_img import decode_labels
 
 
 class Segmentation(BaseModel):
     def __init__(self, lite_file):
         self._lite_file = lite_file
         self._model_loaded = False
-
-
 
     def _load_model(self):
         # Load TFLite model and allocate tensors.

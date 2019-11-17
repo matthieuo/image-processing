@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
 import PIL.Image as Image
-from utils_img import draw_bounding_boxes_on_image
+from models.utils_img import draw_bounding_boxes_on_image
 from models.base_model import BaseModel
 
 

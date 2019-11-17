@@ -7,6 +7,7 @@ import PIL.ImageDraw as ImageDraw
 import PIL.ImageFont as ImageFont
 import PIL.Image as Image
 
+
 def draw_bounding_boxes_on_image(image,
                                  boxes,
                                  color='red',
