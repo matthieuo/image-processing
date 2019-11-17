@@ -1,6 +1,7 @@
 import argparse
 from detect import Detection
 from segment import Segmentation
+from segment_cityscape import SegmentationCityScape
 from pathlib import Path
 import os
 
@@ -16,9 +17,9 @@ def main():
                               help="Detection or segmentation",
                               required=True)
 
-    group_genera.add_argument("-i",
-                              "--image_file",
-                              help="Image file to load",
+    group_genera.add_argument("-vf",
+                              "--video_file",
+                              help="Video file to load",
                               required=False)
 
     group_genera.add_argument("-di",
@@ -38,11 +39,16 @@ def main():
     elif args.model_type.lower() == "segmentation":
         model = Segmentation("deeplabv3_257_mv_gpu.tflite",
                              Path(args.out_directory))
+    elif args.model_type.lower() == "segmentationcs":
+        file_pb = 'trainval_fine/frozen_inference_graph.pb'
+        # "deeplabv3_mnv2_cityscapes_train/frozen_inference_graph.pb",
+        model = SegmentationCityScape(file_pb,
+                                      Path(args.out_directory))
     else:
-        ValueError(f"Model type not supported: {args.model_type}")
+        raise ValueError(f"Model type not supported: {args.model_type}")
 
-    if args.image_file is not None:
-        model([args.image_file])
+    if args.video_file is not None:
+        model(args.video_file, video=True)
     elif args.in_directory is not None:
         im_files = Path(args.in_directory).glob("*.jpg")
         model([str(im) for im in im_files])
