@@ -1,38 +1,35 @@
 import tensorflow as tf
-import numpy as np
-from base_model import BaseModel
-from PIL import Image
-from pathlib import Path
-import os
+from models.base_model import BaseModel
 from utils_img import decode_labels
 
+
 class Segmentation(BaseModel):
-    def __init__(self, lite_file, output_dir):
+    def __init__(self, lite_file):
+        self._lite_file = lite_file
+        self._model_loaded = False
+
+
+
+    def _load_model(self):
         # Load TFLite model and allocate tensors.
-        self._model = tf.lite.Interpreter(model_path=lite_file)
+        self._model = tf.lite.Interpreter(model_path=self._lite_file)
         self._model.allocate_tensors()
-        
+
         # Get input and output tensors.
         self._input_details = self._model.get_input_details()
         self._output_details = self._model.get_output_details()
-
+        self._model_loaded = True
         print(self._output_details)
-        self._output_dir = output_dir / 'segment'
-        os.makedirs(self._output_dir, exist_ok=True)
+        print("model loaded")
         
+    def __call__(self, img):
+        if not self._model_loaded:
+            self._load_model()
+        
+        return self._segment(img)
 
-    def __call__(self, img_path_l):
-        self._segment(img_path_l)
-
-    def _segment(self, img_path_l: list) -> None:
-        for img_path in img_path_l:
-            try:
-                image = self._load_tf_image(img_path)
-            except ValueError as v:
-                print(img_path)
-                print("Image error, skipping...", v)
-                continue
-
+    def _segment(self, img):
+            image = tf.image.convert_image_dtype(img, dtype=tf.float32)
             image = tf.expand_dims(image, 0)
             image = tf.image.resize(image, (self._input_details[0]['shape'][1],
                                             self._input_details[0]['shape'][2]))
@@ -49,5 +46,5 @@ class Segmentation(BaseModel):
             print("Writing mask")
 
             out = decode_labels(pred)
-            im = Image.fromarray(out[0])
-            im.save(self._output_dir / f"segment-{Path(img_path).parts[-1]}")
+
+            return out

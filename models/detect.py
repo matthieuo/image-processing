@@ -1,34 +1,30 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
-import os
 import PIL.Image as Image
-from pathlib import Path
 from utils_img import draw_bounding_boxes_on_image
-from base_model import BaseModel
+from models.base_model import BaseModel
 
 
 class Detection(BaseModel):
-    def __init__(self, hub_handle, output_dir, confidence=0.5):
-        print("Initializing model...")
-        self.model = hub.load(hub_handle, tags=[])
-        print("Model initialized")
- 
+    def __init__(self, hub_handle, confidence=0.5):
+        self._hub_handle = hub_handle
+        self._model_loaded = False
         self._confidence = confidence
-        self._output_dir = output_dir / 'detect'
-        os.makedirs(self._output_dir, exist_ok=True)
 
-    def __call__(self, img_path_l):
-        self._detect(img_path_l)
+    def _load_model(self):
+        print("Initializing model...")
+        self.model = hub.load(self._hub_handle, tags=[])
+        print("Model initialized")
+        self._model_loaded = True
 
-    def _detect(self, img_path_l: list) -> None:
-        for img_path in img_path_l:
-            try:
-                image = self._load_tf_image(img_path)
-            except ValueError as v:
-                print(img_path)
-                print("Image error, skipping...", v)
-                continue
+    def __call__(self, img):
+        if not self._model_loaded:
+            self._load_model()
+        return self._detect(img)
+
+    def _detect(self, img):
+            image = tf.image.convert_image_dtype(img, dtype=tf.float32)
 
             image = tf.expand_dims(image, 0)
 
@@ -49,18 +45,13 @@ class Detection(BaseModel):
 
             if not filt_boxes:
                 print(img_path)
-                print("No boxes found, skiping image")
-                continue
-        
+                raise ValueError("No boxes found")
+
+
             print("Inference done, writing image...")
             im = Image.open(img_path)
             draw_bounding_boxes_on_image(im,
                                          np.array(filt_boxes),
                                          display_str_list_list=filt_labels)
 
-
-            im.save(self._output_dir / f"detec-{Path(img_path).parts[-1]}")
-
-
-
-    
+            return np.array(im)

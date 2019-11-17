@@ -1,17 +1,22 @@
 import tensorflow as tf
 import numpy as np
-from base_model import BaseModel
+from models.base_model import BaseModel
 from PIL import Image
 from pathlib import Path
 import os
-from utils_img import decode_labels
 import cv2
 
-class SegmentationCityScape(BaseModel):
-    def __init__(self, tf1_pbfile, output_dir):
 
+class SegmentationCityScape(BaseModel):
+    def __init__(self, tf1_pbfile):
+
+        self._tf1_pbfile = tf1_pbfile
+        self._model_loaded = False
+
+
+    def _load_model(self):
         print("loading graph")
-        with open(tf1_pbfile, 'rb') as pb_f:
+        with open(self._tf1_pbfile, 'rb') as pb_f:
             graph_def = tf.compat.v1.GraphDef()
             loaded = graph_def.ParseFromString(pb_f.read())
 
@@ -20,13 +25,24 @@ class SegmentationCityScape(BaseModel):
                 inputs='prefix/ImageTensor:0',
                 outputs='prefix/SemanticPredictions:0',
                 name='prefix')
-
-        self._output_dir = output_dir / 'segment'
-        os.makedirs(self._output_dir, exist_ok=True)
+            
+        self._model_loaded = True
+        print("model loaded")
         
+    def __call__(self, image):
+        if not self._model_loaded:
+            self._load_model()
+            
+        print(image.dtype)
+       
+        image = tf.expand_dims(image, 0)
+        output_data = self._inf_func(image)
 
-    def __call__(self, img_path_l, video=False):
-            self._segment(img_path_l, video)
+        output_data = tf.squeeze(output_data, axis=0)
+        print(output_data.shape)
+        segmented_image = SegmentationCityScape._parse_pred(output_data.numpy(), 19)
+        return segmented_image
+        
 
     def _segment(self, img_path_l: list, video=False) -> None:
 

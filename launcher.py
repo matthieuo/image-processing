@@ -1,9 +1,10 @@
+import tensorflow as tf
 import argparse
-from detect import Detection
-from segment import Segmentation
-from segment_cityscape import SegmentationCityScape
+from models.models_fact import ModelF
 from pathlib import Path
+from PIL import Image
 import os
+import cv2
 
 
 def main():
@@ -33,27 +34,87 @@ def main():
                               required=True)
     args = parser.parse_args()
 
-    if args.model_type.lower() == "detection":
-        model = Detection("https://tfhub.dev/google/faster_rcnn/openimages_v4/inception_resnet_v2/1",
-                          Path(args.out_directory))
-    elif args.model_type.lower() == "segmentation":
-        model = Segmentation("deeplabv3_257_mv_gpu.tflite",
-                             Path(args.out_directory))
-    elif args.model_type.lower() == "segmentationcs":
-        file_pb = 'trainval_fine/frozen_inference_graph.pb'
-        # "deeplabv3_mnv2_cityscapes_train/frozen_inference_graph.pb",
-        model = SegmentationCityScape(file_pb,
-                                      Path(args.out_directory))
-    else:
-        raise ValueError(f"Model type not supported: {args.model_type}")
-
+    model = ModelF.get(args.model_type.lower())
+    
+    out_dir = Path(args.out_directory)
+    print("out dir", out_dir)
+    
     if args.video_file is not None:
-        model(args.video_file, video=True)
+        cap = cv2.VideoCapture(args.video_file)
+ 
+        # Check if camera opened successfully
+        if not cap.isOpened():
+            raise ValueError("Unable to read video")
+
+        os.makedirs(out_dir, exist_ok=True)
+        
+        frame_width = int(cap.get(3))
+        frame_height = int(cap.get(4))
+
+
+        scale_percent = 50 # percent of original size
+        width = int(frame_width * scale_percent / 100)
+        height = int(frame_height * scale_percent / 100)
+        dim = (width, height)
+        dimrot = (height, width)     
+        out = cv2.VideoWriter(str(out_dir / f"process-{Path(args.video_file).parts[-1]}"),
+                              cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
+                              10,
+                              dimrot)
+
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                print(frame.shape)
+                print(frame.dtype)
+
+                image = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+                    
+                # resize image
+                image = cv2.resize(image,
+                                   dimrot,
+                                   interpolation=cv2.INTER_AREA)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                print(image.shape)
+                print(image.dtype)
+
+                out_img = model(image)
+
+                cimg = cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR)
+                out.write(cimg)
+                
+            else:
+                break
+            
+        cap.release()
+        out.release()
+
     elif args.in_directory is not None:
         im_files = Path(args.in_directory).glob("*.jpg")
-        model([str(im) for im in im_files])
+        if not im_files:
+            raise ValueError("No images files found in directory", args.in_directory)
+        
+        os.makedirs(out_dir, exist_ok=True)
+        
+        for img_path in [str(im) for im in im_files]:
+            try:
+                image = tf.io.read_file(img_path)
+                image = tf.io.decode_image(image,
+                                           channels=3,
+                                           expand_animations=False)
+                out_img = model(image)
+            except ValueError as v:
+                print(img_path)
+                print("Image error, skipping...", v)
+                continue
+            
+            im = Image.fromarray(out_img)
+            im.save(out_dir / f"segment-{Path(img_path).parts[-1]}")
     else:
         raise ValueError('Please specify directory or file')
+
+
+
 
 
 if __name__ == '__main__':
