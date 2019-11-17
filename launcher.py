@@ -102,14 +102,14 @@ def main():
                 image = tf.io.decode_image(image,
                                            channels=3,
                                            expand_animations=False)
-                out_img = model(image)
+                out_img = model(image.numpy())
             except ValueError as v:
                 print(img_path)
                 print("Image error, skipping...", v)
                 continue
             
             im = Image.fromarray(out_img)
-            im.save(out_dir / f"segment-{Path(img_path).parts[-1]}")
+            im.save(out_dir / f"process-{Path(img_path).parts[-1]}")
     else:
         raise ValueError('Please specify directory or file')
 

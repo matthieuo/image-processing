@@ -45,4 +45,4 @@ class Segmentation(BaseModel):
 
             out = decode_labels(pred)
 
-            return out
+            return out[0]

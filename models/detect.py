@@ -44,12 +44,11 @@ class Detection(BaseModel):
                     filt_labels.append([l.numpy().decode('UTF-8')])
 
             if not filt_boxes:
-                print(img_path)
                 raise ValueError("No boxes found")
 
 
             print("Inference done, writing image...")
-            im = Image.open(img_path)
+            im = Image.fromarray(img)
             draw_bounding_boxes_on_image(im,
                                          np.array(filt_boxes),
                                          display_str_list_list=filt_labels)
