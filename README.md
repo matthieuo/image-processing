@@ -16,7 +16,7 @@ This tool supports video using the `-vf` flag. Input videos can be in any format
 #### Note: 
 To use this model, you need to download one pretrained model from [https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md].
 
-Tested only with `deeplabv3\_mnv2\_cityscapes\_train\_2018\_02\_05.tar.gz`
+Tested only with `deeplabv3_mnv2_cityscapes_train_2018_02_05.tar.gz`
 
 
 
