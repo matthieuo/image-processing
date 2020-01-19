@@ -7,6 +7,7 @@ import os
 import cv2
 
 
+
 def main():
     os.environ["TFHUB_CACHE_DIR"] = '/tmp/tfhub'
     parser = argparse.ArgumentParser()
